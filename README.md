@@ -1,5 +1,7 @@
 # Interspeech 2025 - Speech Emotion Recognition challenge
 
+UNICAMP entry for the 2025 Interspeech challenge on speech emotion recognition
+
 ## Building environment
 Take this steps to prepare data and environment.
 
@@ -40,5 +42,3 @@ To access remotely (like jupyter) run this in your local machine terminal
 ssh -N -L 1213:localhost:1213 dl-17
 ```
 Make sure to export the same port as the running container and the correct dl
-
-UNICAMP entry
