@@ -18,6 +18,7 @@ cp -r /home/lucas.ueda/IS2025_Podcast_Challenge/* ./data/
 Extract zip files and tar.gz files
 ```bash
 unzip Transcripts.zip
+unzip Labels.zip
 tar -xzvf Audios.tar.gz
 ```
 After all that you should see this on your data folder:
