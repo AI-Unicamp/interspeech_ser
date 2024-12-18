@@ -34,7 +34,7 @@ import utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--ssl_type", type=str, default="wavlm-large")
-parser.add_argument("--model_path", type=str, default="./model/wavlm-large")
+parser.add_argument("--model_path", type=str, default="./model/cat_ser/7/")
 parser.add_argument("--pooling_type", type=str, default="AttentiveStatisticsPooling")
 parser.add_argument("--head_dim", type=int, default=1024)
 parser.add_argument('--store_path')
