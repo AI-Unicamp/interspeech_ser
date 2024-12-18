@@ -1,0 +1,4 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "label_path": "./processed_labels.csv"
+}
