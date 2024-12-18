@@ -1,6 +1,8 @@
 # Interspeech 2025 - Speech Emotion Recognition challenge
 
-UNICAMP entry for the 2025 Interspeech challenge on speech emotion recognition
+UNICAMP entry for the 2025 Interspeech challenge on speech emotion recognition.
+
+In order to run training you must have at least one 30gb GPU, otherwise you should decrease batch size but it was not tested.
 
 ## Building environment
 Take this steps to prepare data and environment.
