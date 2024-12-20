@@ -3,3 +3,4 @@ data/
 benchmark/model/
 .ipynb_checkpoints/
 experiments/
+pretrained_models/
