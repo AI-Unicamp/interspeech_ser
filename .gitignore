@@ -1,4 +1,5 @@
 data/
 *.pyc
 benchmark/model/
-
+.ipynb_checkpoints/
+experiments/

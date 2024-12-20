@@ -1,0 +1,5 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false
+}

@@ -135,14 +135,24 @@ for dtype in ["test3"]:
         print(pred_values)
         data.append([utt[0], min(max(1, pred_values[0] * 6 + 1), 7),min(max(1, pred_values[2] * 6 + 1), 7),min(max(1, pred_values[1] * 6 + 1), 7)])
 
-    # print(data)
-    # Writing to CSV file
+
+    import pandas as pd 
+    import numpy as np
+    data = np.array(data)
     os.makedirs(MODEL_PATH + '/results', exist_ok=True) 
     csv_filename = MODEL_PATH + '/results/' + dtype + '.csv'
-    with open(csv_filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["FileName", "EmoAct", "EmoVal", "EmoDom"])
-        writer.writerows(data)
+    df = pd.DataFrame({'FileName': data[:,0], 'EmoAct': data[:,1], 'EmoVal': data[:,2], 'EmoDom': data[:,3]})
+    df = df.sort_values(by='FileName').reset_index(drop = True)
+    df.to_csv(csv_filename, index=False)
+
+    # print(data)
+    # Writing to CSV file
+    # os.makedirs(MODEL_PATH + '/results', exist_ok=True) 
+    # csv_filename = MODEL_PATH + '/results/' + dtype + '.csv'
+    # with open(csv_filename, mode='w', newline='') as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(["FileName", "EmoAct", "EmoVal", "EmoDom"])
+    #     writer.writerows(data)
 
 
 lm.print_stat()

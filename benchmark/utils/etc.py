@@ -9,6 +9,7 @@ def set_deterministic(seed):
 
 def get_ssl_type(ssl_type):
     ssl_book={
-        "wavlm-large": "microsoft/wavlm-large"
+        "wavlm-large": "microsoft/wavlm-large",
+        "wavlm-base": "microsoft/wavlm-base"
     }
     return ssl_book.get(ssl_type, None)

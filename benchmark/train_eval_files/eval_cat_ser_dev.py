@@ -64,6 +64,13 @@ train_df = df[df['Split_Set'] == 'Train']
 # Classes (emotions)
 classes = ['Angry', 'Sad', 'Happy', 'Surprise', 'Fear', 'Disgust', 'Contempt', 'Neutral']
 
+
+classes_ = ['A', 'S', 'H', 'U', 'F', 'D', 'C', 'N']
+
+map_argmax = dict()
+for i, c in enumerate(classes_):
+    map_argmax[i] = c
+
 # Calculate class frequencies
 class_frequencies = train_df[classes].sum().to_dict()
 
@@ -185,7 +192,8 @@ for dtype in ["dev"]:
 
     data = []
     for pred, utt in zip(total_pred, total_utt):
-        pred_values = ', '.join([f'{val:.4f}' for val in pred.cpu().numpy().flatten()])
+        # pred_values = ', '.join([f'{val:.4f}' for val in pred.cpu().numpy().flatten()])
+        pred_values = map_argmax[np.argmax(pred.cpu().numpy().flatten())]
         data.append([utt[0], pred_values])
 
     # Writing to CSV file

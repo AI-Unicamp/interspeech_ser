@@ -28,8 +28,8 @@ from transformers import AutoModel
 
 # Self-Written Modules
 sys.path.append(os.getcwd())
-import net
-import utils
+from benchmark import net
+from benchmark import utils
 
 
 parser = argparse.ArgumentParser()
@@ -70,7 +70,6 @@ map_argmax = dict()
 for i, c in enumerate(classes_):
     map_argmax[i] = c
 
-
 # Calculate class frequencies
 class_frequencies = train_df[classes].sum().to_dict()
 
@@ -92,18 +91,24 @@ class_weights_tensor = torch.tensor(weights_list, device='cuda', dtype=torch.flo
 # Print or return the tensor
 print(class_weights_tensor)
 
+import json
+from collections import defaultdict
+config_path = "configs/config_cat.json"
+with open(config_path, "r") as f:
+    config = json.load(f)
+audio_path = config["wav_dir"]
+label_path = config["label_path"]
 
-files_test3 = [filename for filename in os.listdir(audio_path) if 'test3' in filename]
-
-dtype = "test3"
+dtype = "dev"
+cur_utts, cur_labs = utils.load_cat_emo_label(label_path, dtype)
 
 total_dataset=dict()
 total_dataloader=dict()
 
-cur_wavs = utils.load_audio(audio_path, files_test3)
+cur_wavs = utils.load_audio(audio_path, cur_utts)
 wav_mean, wav_std = utils.load_norm_stat(MODEL_PATH+"/train_norm_stat.pkl")
 cur_wav_set = utils.WavSet(cur_wavs, wav_mean=wav_mean, wav_std=wav_std)
-total_dataset[dtype] = utils.CombinedSet([cur_wav_set, files_test3])
+total_dataset[dtype] = utils.CombinedSet([cur_wav_set, cur_utts])
 total_dataloader[dtype] = DataLoader(
     total_dataset[dtype], batch_size=1, shuffle=False, 
     pin_memory=True, num_workers=4,
@@ -144,7 +149,7 @@ ser_model.eval(); ser_model.cuda()
 
 
 lm = utils.LogManager()
-for dtype in ["test3"]:
+for dtype in ["dev"]:
     lm.alloc_stat_type_list([f"{dtype}_loss"])
 
 min_epoch=0
@@ -157,7 +162,7 @@ ser_model.eval()
 
 INFERENCE_TIME=0
 FRAME_SEC = 0
-for dtype in ["test3"]:
+for dtype in ["dev"]:
     total_pred = [] 
     total_y = []
     total_utt = []
@@ -193,17 +198,8 @@ for dtype in ["test3"]:
     # Writing to CSV file
     os.makedirs(MODEL_PATH + '/results', exist_ok=True) 
     csv_filename = MODEL_PATH + '/results/' + dtype + '.csv'
-
-    import pandas as pd 
-    import numpy as np
-    data = np.array(data)
-    # os.makedirs(MODEL_PATH + '/results', exist_ok=True) 
-    df = pd.DataFrame({'FileName': data[:,0], 'EmoClass': data[:,1]})
-    df = df.sort_values(by='FileName').reset_index(drop = True)
-    df.to_csv(csv_filename, index=False)
-
-    # with open(csv_filename, mode='w', newline='') as file:
-    #     writer = csv.writer(file)
-    #     writer.writerow(['Filename', 'EmoClass'])
-    #     writer.writerows(data)
+    with open(csv_filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Filename', 'Prediction'])
+        writer.writerows(data)
 
