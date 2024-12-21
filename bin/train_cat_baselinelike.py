@@ -31,42 +31,18 @@ from torch.utils.data import WeightedRandomSampler
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--seed", type=int, default=100)
-parser.add_argument("--ssl_type", type=str, default="wavlm-large")
-parser.add_argument("--batch_size", type=int, default=32)
-parser.add_argument("--accumulation_steps", type=int, default=1)
-parser.add_argument("--epochs", type=int, default=10)
-parser.add_argument("--lr", type=float, default=0.001)
-parser.add_argument("--model_path", type=str, default="./temp")
+parser.add_argument("--seed", type=int, default=7)
+# parser.add_argument("--ssl_type", type=str, default="wavlm-large")
+# parser.add_argument("--batch_size", type=int, default=32)
+# parser.add_argument("--accumulation_steps", type=int, default=1)
+# parser.add_argument("--epochs", type=int, default=10)
+# parser.add_argument("--lr", type=float, default=0.001)
+# parser.add_argument("--model_path", type=str, default="./temp")
 parser.add_argument("--config_path", type=str, default="./configs/config_cat.json")
-parser.add_argument("--head_dim", type=int, default=1024)
+# parser.add_argument("--head_dim", type=int, default=1024)
 
-parser.add_argument("--pooling_type", type=str, default="AttentiveStatisticsPooling")
+# parser.add_argument("--pooling_type", type=str, default="AttentiveStatisticsPooling")
 args = parser.parse_args()
-
-utils.set_deterministic(args.seed)
-SSL_TYPE = utils.get_ssl_type(args.ssl_type)
-assert SSL_TYPE != None, print("Invalid SSL type!")
-BATCH_SIZE = args.batch_size
-ACCUMULATION_STEP = args.accumulation_steps
-assert (ACCUMULATION_STEP > 0) and (BATCH_SIZE % ACCUMULATION_STEP == 0)
-EPOCHS=args.epochs
-LR=args.lr
-MODEL_PATH = args.model_path
-os.makedirs(MODEL_PATH, exist_ok=True)
-
-
-# Start logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join(args.model_path, '%s-%d.log' % ('loggingtxt', time.time()))),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger()
 
 import json
 from collections import defaultdict
@@ -77,15 +53,62 @@ with open(config_path, "r") as f:
 audio_path = config["wav_dir"]
 label_path = config["label_path"]
 
+SSL_TYPE = utils.get_ssl_type(config['ssl_type'])
+assert SSL_TYPE != None, print("Invalid SSL type!")
+BATCH_SIZE = config['batch_size']
+ACCUMULATION_STEP = config['accum_step']
+assert (ACCUMULATION_STEP > 0) and (BATCH_SIZE % ACCUMULATION_STEP == 0)
+EPOCHS= config['epochs']
+LR=config['lr']
+MODEL_PATH = config['model_path']
+os.makedirs(MODEL_PATH, exist_ok=True)
+HEAD_DIM = config['head_dim']
+POOLING_TYPE = config['pooling_type']
+
+USE_TIMBRE_PERTURB = config['use_timbre_perturb']
+# utils.set_deterministic(args.seed)
+# SSL_TYPE = utils.get_ssl_type(args.ssl_type)
+# assert SSL_TYPE != None, print("Invalid SSL type!")
+# BATCH_SIZE = args.batch_size
+# ACCUMULATION_STEP = args.accumulation_steps
+# assert (ACCUMULATION_STEP > 0) and (BATCH_SIZE % ACCUMULATION_STEP == 0)
+# EPOCHS=args.epochs
+# LR=args.lr
+# MODEL_PATH = args.model_path
+# os.makedirs(MODEL_PATH, exist_ok=True)
+
+
+# Start logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(MODEL_PATH, '%s-%d.log' % ('loggingtxt', time.time()))),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger()
+
+
+
 # print(config["use_balanced_batch"])
 try:
     balanced_batch = config["use_balanced_batch"]
 except:
     balanced_batch = False
 
+try:
+    normalize_wav = config["normalize_wav"]
+except:
+    normalize_wav = True
+
 logger.info(f"Starting an experimento in model path = {MODEL_PATH}")
 logger.info(f"Using ssl = {SSL_TYPE} LR = {LR} Epochs = {EPOCHS} Batch size = {BATCH_SIZE} Accum steps = {ACCUMULATION_STEP}")
 logger.info(f"Using balanced batch = {balanced_batch}")
+logger.info(f"Using normalize wav = {normalize_wav}")
+logger.info(f"Using Timbre Perturbation = {USE_TIMBRE_PERTURB}")
+
 
 import pandas as pd
 import numpy as np
@@ -120,7 +143,7 @@ for dtype in ["train", "dev"]:
     cur_utts, cur_labs = utils.load_cat_emo_label(label_path, dtype)
     cur_wavs = utils.load_audio(audio_path, cur_utts)
     if dtype == "train":
-        cur_wav_set = utils.WavSet(cur_wavs)
+        cur_wav_set = utils.WavSet(cur_wavs, normalize_wav=normalize_wav, use_tp = USE_TIMBRE_PERTURB)
         cur_wav_set.save_norm_stat(MODEL_PATH+"/train_norm_stat.pkl")
     else:
         if dtype == "dev":
@@ -128,7 +151,7 @@ for dtype in ["train", "dev"]:
             wav_std = total_dataset["train"].datasets[0].wav_std
         elif dtype == "test":
             wav_mean, wav_std = utils.load_norm_stat(MODEL_PATH+"/train_norm_stat.pkl")
-        cur_wav_set = utils.WavSet(cur_wavs, wav_mean=wav_mean, wav_std=wav_std)
+        cur_wav_set = utils.WavSet(cur_wavs, wav_mean=wav_mean, wav_std=wav_std, normalize_wav=normalize_wav)
     ########################################################
     cur_bs = BATCH_SIZE // ACCUMULATION_STEP if dtype == "train" else 1
     is_shuffle=True if dtype == "train" else False
@@ -171,9 +194,9 @@ ssl_model.eval(); ssl_model.cuda()
 ########## Implement pooling method ##########
 feat_dim = ssl_model.config.hidden_size
 
-pool_net = getattr(net, args.pooling_type)
+pool_net = getattr(net, POOLING_TYPE)
 attention_pool_type_list = ["AttentiveStatisticsPooling"]
-if args.pooling_type in attention_pool_type_list:
+if POOLING_TYPE in attention_pool_type_list:
     is_attentive_pooling = True
     pool_model = pool_net(feat_dim)
 else:
@@ -183,10 +206,10 @@ print(pool_model)
 pool_model.cuda()
 concat_pool_type_list = ["AttentiveStatisticsPooling"]
 dh_input_dim = feat_dim * 2 \
-    if args.pooling_type in concat_pool_type_list \
+    if POOLING_TYPE in concat_pool_type_list \
     else feat_dim
 
-ser_model = net.EmotionRegression(dh_input_dim, args.head_dim, 1, 8, dropout=0.5)
+ser_model = net.EmotionRegression(dh_input_dim, HEAD_DIM, 1, 8, dropout=0.5)
 ##############################################
 ser_model.eval(); ser_model.cuda()
 

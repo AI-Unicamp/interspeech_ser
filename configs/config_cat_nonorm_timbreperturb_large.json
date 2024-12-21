@@ -1,0 +1,15 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "normalize_wav": false,
+    "epochs": 20,
+    "lr": 1e-5,
+    "head_dim": 768,
+    "model_path": "./experiments/baseline_wavlmbase_nonormwav_timbreperturb_large",
+    "batch_size": 16,
+    "accum_step":2,
+    "ssl_type": "wavlm-large",
+    "pooling_type": "AttentiveStatisticsPooling",
+    "use_timbre_perturb": true
+}

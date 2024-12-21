@@ -33,24 +33,51 @@ from benchmark import utils
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ssl_type", type=str, default="wavlm-large")
+# parser.add_argument("--ssl_type", type=str, default="wavlm-large")
 parser.add_argument("--model_path", type=str, default="./model/cat_ser/7/")
-parser.add_argument("--pooling_type", type=str, default="AttentiveStatisticsPooling")
-parser.add_argument("--head_dim", type=int, default=1024)
-parser.add_argument('--store_path')
+parser.add_argument("--config_path", type=str, default="./configs/config_cat.json")
+# parser.add_argument("--pooling_type", type=str, default="AttentiveStatisticsPooling")
+# parser.add_argument("--head_dim", type=int, default=1024)
+# parser.add_argument('--store_path')
 args = parser.parse_args()
 
-SSL_TYPE = utils.get_ssl_type(args.ssl_type)
-assert SSL_TYPE != None, print("Invalid SSL type!")
-MODEL_PATH = args.model_path
+# SSL_TYPE = utils.get_ssl_type(args.ssl_type)
+# assert SSL_TYPE != None, print("Invalid SSL type!")
+# MODEL_PATH = args.model_path
+
 
 import json
 from collections import defaultdict
-config_path = "configs/config_cat.json"
+config_path = args.config_path
 with open(config_path, "r") as f:
     config = json.load(f)
 audio_path = config["wav_dir"]
 label_path = config["label_path"]
+
+SSL_TYPE = utils.get_ssl_type(config['ssl_type'])
+assert SSL_TYPE != None, print("Invalid SSL type!")
+# BATCH_SIZE = config['batch_size']
+# ACCUMULATION_STEP = config['accum_step']
+# assert (ACCUMULATION_STEP > 0) and (BATCH_SIZE % ACCUMULATION_STEP == 0)
+# EPOCHS= config['epochs']
+# LR=config['lr']
+MODEL_PATH = config['model_path']
+os.makedirs(MODEL_PATH, exist_ok=True)
+HEAD_DIM = config['head_dim']
+POOLING_TYPE = config['pooling_type']
+
+USE_TIMBRE_PERTURB = config['use_timbre_perturb']
+
+# print(config["use_balanced_batch"])
+try:
+    balanced_batch = config["use_balanced_batch"]
+except:
+    balanced_batch = False
+
+try:
+    normalize_wav = config["normalize_wav"]
+except:
+    normalize_wav = True
 
 import pandas as pd
 import numpy as np
@@ -91,13 +118,13 @@ class_weights_tensor = torch.tensor(weights_list, device='cuda', dtype=torch.flo
 # Print or return the tensor
 print(class_weights_tensor)
 
-import json
-from collections import defaultdict
-config_path = "configs/config_cat.json"
-with open(config_path, "r") as f:
-    config = json.load(f)
-audio_path = config["wav_dir"]
-label_path = config["label_path"]
+# import json
+# from collections import defaultdict
+# config_path = "configs/config_cat.json"
+# with open(config_path, "r") as f:
+#     config = json.load(f)
+# audio_path = config["wav_dir"]
+# label_path = config["label_path"]
 
 dtype = "dev"
 cur_utts, cur_labs = utils.load_cat_emo_label(label_path, dtype)
@@ -107,7 +134,7 @@ total_dataloader=dict()
 
 cur_wavs = utils.load_audio(audio_path, cur_utts)
 wav_mean, wav_std = utils.load_norm_stat(MODEL_PATH+"/train_norm_stat.pkl")
-cur_wav_set = utils.WavSet(cur_wavs, wav_mean=wav_mean, wav_std=wav_std)
+cur_wav_set = utils.WavSet(cur_wavs, wav_mean=wav_mean, wav_std=wav_std, normalize_wav=normalize_wav, use_tp = False) # In evaluation we never use tp
 total_dataset[dtype] = utils.CombinedSet([cur_wav_set, cur_utts])
 total_dataloader[dtype] = DataLoader(
     total_dataset[dtype], batch_size=1, shuffle=False, 
@@ -124,9 +151,9 @@ ssl_model.eval(); ssl_model.cuda()
 ########## Implement pooling method ##########
 feat_dim = ssl_model.config.hidden_size
 
-pool_net = getattr(net, args.pooling_type)
+pool_net = getattr(net, POOLING_TYPE)
 attention_pool_type_list = ["AttentiveStatisticsPooling"]
-if args.pooling_type in attention_pool_type_list:
+if POOLING_TYPE in attention_pool_type_list:
     is_attentive_pooling = True
     pool_model = pool_net(feat_dim)
     pool_model.load_state_dict(torch.load(MODEL_PATH+"/final_pool.pt"))
@@ -139,10 +166,10 @@ pool_model.eval()
 pool_model.cuda()
 concat_pool_type_list = ["AttentiveStatisticsPooling"]
 dh_input_dim = feat_dim * 2 \
-    if args.pooling_type in concat_pool_type_list \
+    if POOLING_TYPE in concat_pool_type_list \
     else feat_dim
 
-ser_model = net.EmotionRegression(dh_input_dim, args.head_dim, 1, 8, dropout=0.5)
+ser_model = net.EmotionRegression(dh_input_dim, HEAD_DIM, 1, 8, dropout=0.5)
 ##############################################
 ser_model.load_state_dict(torch.load(MODEL_PATH+"/final_ser.pt"))
 ser_model.eval(); ser_model.cuda()
