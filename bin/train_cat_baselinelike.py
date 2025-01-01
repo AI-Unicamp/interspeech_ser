@@ -64,8 +64,10 @@ MODEL_PATH = config['model_path']
 os.makedirs(MODEL_PATH, exist_ok=True)
 HEAD_DIM = config['head_dim']
 POOLING_TYPE = config['pooling_type']
-
+WC = config["weight_decay"]
+DROPOUT = config["dropout_head"]
 USE_TIMBRE_PERTURB = config['use_timbre_perturb']
+TP_PROB = config['tp_prob']
 # utils.set_deterministic(args.seed)
 # SSL_TYPE = utils.get_ssl_type(args.ssl_type)
 # assert SSL_TYPE != None, print("Invalid SSL type!")
@@ -143,7 +145,7 @@ for dtype in ["train", "dev"]:
     cur_utts, cur_labs = utils.load_cat_emo_label(label_path, dtype)
     cur_wavs = utils.load_audio(audio_path, cur_utts)
     if dtype == "train":
-        cur_wav_set = utils.WavSet(cur_wavs, normalize_wav=normalize_wav, use_tp = USE_TIMBRE_PERTURB)
+        cur_wav_set = utils.WavSet(cur_wavs, normalize_wav=normalize_wav, use_tp = USE_TIMBRE_PERTURB, tp_prob= TP_PROB)
         cur_wav_set.save_norm_stat(MODEL_PATH+"/train_norm_stat.pkl")
     else:
         if dtype == "dev":
@@ -209,19 +211,19 @@ dh_input_dim = feat_dim * 2 \
     if POOLING_TYPE in concat_pool_type_list \
     else feat_dim
 
-ser_model = net.EmotionRegression(dh_input_dim, HEAD_DIM, 1, 8, dropout=0.5)
+ser_model = net.EmotionRegression(dh_input_dim, HEAD_DIM, 1, 8, dropout=DROPOUT)
 ##############################################
 ser_model.eval(); ser_model.cuda()
 
-ssl_opt = torch.optim.AdamW(ssl_model.parameters(), LR)
-ser_opt = torch.optim.AdamW(ser_model.parameters(), LR)
+ssl_opt = torch.optim.AdamW(ssl_model.parameters(), LR, weight_decay=WC)
+ser_opt = torch.optim.AdamW(ser_model.parameters(), LR, weight_decay=WC)
 
 # scaler = GradScaler()
 ssl_opt.zero_grad(set_to_none=True)
 ser_opt.zero_grad(set_to_none=True)
 
 if is_attentive_pooling:
-    pool_opt = torch.optim.AdamW(pool_model.parameters(), LR)
+    pool_opt = torch.optim.AdamW(pool_model.parameters(), LR, weight_decay=WC)
     pool_opt.zero_grad(set_to_none=True)
 
 lm = utils.LogManager()

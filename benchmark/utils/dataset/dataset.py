@@ -2,6 +2,7 @@ import numpy as np
 import pickle as pk
 import torch.utils as torch_utils
 from . import normalizer
+import random 
 
 # from torch import nn
 # import torch
@@ -34,7 +35,7 @@ def sliced_timbre_perturb(wav, sr = 22050, segment_size= 22050//2, formant_rate=
   return out
 
 def timbre_perturb(wav, sr, formant_shift=1.0, pitch_steps = 0.01, pitch_floor=75, pitch_ceil=600, fname = 'null'):
-#   snd = parselmouth.Sound(wav, sampling_frequency=sr)
+  snd = parselmouth.Sound(wav, sampling_frequency=sr)
   # pitch_steps: float = 0.01
   # pitch_floor: float = 75
   # pitch_ceil: float = 600
@@ -49,7 +50,7 @@ def timbre_perturb(wav, sr, formant_shift=1.0, pitch_steps = 0.01, pitch_floor=7
 
   # fname = "/content/ex_bia.wav"
 #   snd, sr  =  librosa.load(wav, sr = sr)
-  snd = wav
+#   snd = wav
 
   try:
     pitch = parselmouth.praat.call(
@@ -86,6 +87,7 @@ def timbre_perturb(wav, sr, formant_shift=1.0, pitch_steps = 0.01, pitch_floor=7
 def fixed_timbre_perturb(wav, sr = 22050, segment_size= 22050//2, formant_rate=1.4, pitch_steps = 0.01, pitch_floor=75, pitch_ceil=600, fname='null'):
 
   formant_shift = sampler(formant_rate)
+#   print(formant_shift)
   # print(segment_size*i, segment_size*(i+1))
   out_tmp = timbre_perturb(wav, sr, formant_shift, pitch_steps, pitch_floor, pitch_ceil, fname)
 
@@ -117,6 +119,27 @@ class CombinedSet(torch_utils.data.Dataset):
         return result
 
 
+class TxtSet(torch_utils.data.Dataset):
+    def __init__(self, texts, tokenizer, max_len=128):
+        self.texts = texts
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        text = self.texts[idx]
+        encoding = self.tokenizer(
+            text, 
+            padding="max_length", 
+            truncation=True, 
+            max_length=self.max_len, 
+            return_tensors="pt"
+        )
+
+        return (encoding["input_ids"].squeeze(0), encoding["attention_mask"].squeeze(0))
+
 class WavSet(torch_utils.data.Dataset): 
     def __init__(self, *args, **kwargs):
         super(WavSet, self).__init__()
@@ -130,6 +153,7 @@ class WavSet(torch_utils.data.Dataset):
 
         self.normalize_wav = kwargs.get("normalize_wav", True)
         self.use_tp = kwargs.get("use_tp", False)
+        self.tp_prob = kwargs.get("tp_prob", 1)
 
         # check max duration
         self.max_dur = np.min([np.max([len(cur_wav) for cur_wav in self.wav_list]), self.upper_bound_max_dur*self.sampling_rate])
@@ -149,7 +173,9 @@ class WavSet(torch_utils.data.Dataset):
         cur_dur = len(cur_wav)
         
         if(self.use_tp):
-            cur_wav = fixed_timbre_perturb(cur_wav, sr = 16000, segment_size= 16000//2, formant_rate=1.4, pitch_steps = 0.01, pitch_floor=75, pitch_ceil=600, fname='null')
+            r = random.random()
+            if(r<self.tp_prob):
+                cur_wav = fixed_timbre_perturb(cur_wav, sr = 16000, segment_size= 16000//2, formant_rate=1.4, pitch_steps = 0.01, pitch_floor=75, pitch_ceil=600, fname='null')
 
         if(self.normalize_wav):
             cur_wav = (cur_wav - self.wav_mean) / (self.wav_std+0.000001)

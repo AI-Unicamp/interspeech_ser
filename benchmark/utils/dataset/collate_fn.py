@@ -2,6 +2,40 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+
+def collate_fn_txt_wav_lab_mask(batch):
+    total_wav = []
+    total_lab = []
+    total_dur = []
+    total_utt = []
+    total_text_ids = []
+    total_text_ids_attn = []
+    for wav_data in batch:
+
+        wav, dur = wav_data[0]   
+        lab = wav_data[1]
+        total_wav.append(torch.Tensor(wav))
+        total_lab.append(lab)
+        total_dur.append(dur)
+        total_utt.append(wav_data[2])
+
+        t1, tm = wav_data[3]
+        total_text_ids.append(t1)
+        total_text_ids_attn.append(tm)
+
+    total_wav = nn.utils.rnn.pad_sequence(total_wav, batch_first=True)
+    
+    total_lab = torch.Tensor(np.array(total_lab))
+    max_dur = np.max(total_dur)
+    attention_mask = torch.zeros(total_wav.shape[0], max_dur)
+    for data_idx, dur in enumerate(total_dur):
+        attention_mask[data_idx,:dur] = 1
+
+    total_text_ids = nn.utils.rnn.pad_sequence(total_text_ids, batch_first=True)
+    total_text_ids_attn = nn.utils.rnn.pad_sequence(total_text_ids_attn, batch_first=True)
+    ## compute mask
+    return total_wav, total_lab, attention_mask, total_utt, total_text_ids, total_text_ids_attn
+
 def collate_fn_wav_lab_mask(batch):
     total_wav = []
     total_lab = []

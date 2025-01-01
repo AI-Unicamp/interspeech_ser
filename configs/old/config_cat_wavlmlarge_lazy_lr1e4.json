@@ -1,0 +1,13 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "audio_lazy_dir": "/workspace/lucas.ueda/interspeech_ser/data_tmp/wavlm_large",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "use_focalloss":false,
+    "epochs": 100,
+    "lr": 1e-4,
+    "model_path": "./experiments/ownsermodel_wavlmlarge_lazyload_lr1e4",
+    "batch_size": 64,
+    "accum_step":1
+}

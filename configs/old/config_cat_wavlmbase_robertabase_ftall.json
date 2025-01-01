@@ -1,0 +1,19 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "normalize_wav": false,
+    "epochs": 20,
+    "lr": 2e-4,
+    "head_dim": 256,
+    "model_path": "./experiments/baseline_wavlmbase_robertabase_ftall",
+    "batch_size": 64,
+    "accum_step":2,
+    "ssl_type": "wavlm-base",
+    "pooling_type": "AttentiveStatisticsPooling",
+    "use_timbre_perturb": false,
+    "tp_prob": 1,
+    "weight_decay": 1e-6,
+    "dropout_head": 0.5
+}

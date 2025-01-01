@@ -1,0 +1,16 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "lazy_dir1": "/workspace/lucas.ueda/interspeech_ser/data_tmp/wavlm_large",
+    "lazy_dir2": "/workspace/lucas.ueda/interspeech_ser/data_tmp/roberta_large",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "feat1_dim": 1024,
+    "feat2_dim": 1024,
+    "use_balanced_batch": false,
+    "use_focalloss":false,
+    "epochs": 20,
+    "lr": 1e-4,
+    "model_path": "./experiments/multimodalmodel_wavlmlarge_robertalarge_lazyload_lr1e4_cka_inv",
+    "batch_size": 64,
+    "accum_step":1
+}

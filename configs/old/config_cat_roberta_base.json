@@ -1,0 +1,11 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "epochs": 10,
+    "lr": 1e-5,
+    "model_path": "./experiments/roberta_base",
+    "batch_size": 128,
+    "accum_step":1
+}
