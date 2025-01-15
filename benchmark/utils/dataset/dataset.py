@@ -1,14 +1,18 @@
 import numpy as np
 import pickle as pk
+from tqdm import tqdm
+import torch
 import torch.utils as torch_utils
 from . import normalizer
-import random 
+import random
 
 # from torch import nn
 # import torch
 # import torch.nn.functional as F
 # import torch.optim as optim
 # import numpy as np
+import opensmile
+import audiofile
 import parselmouth
 def sampler(ratio):
   shifts = np.random.rand((1)) * (ratio - 1.) + 1.
@@ -139,6 +143,53 @@ class TxtSet(torch_utils.data.Dataset):
         )
 
         return (encoding["input_ids"].squeeze(0), encoding["attention_mask"].squeeze(0))
+    
+class AcousticSet(torch_utils.data.Dataset):
+    def __init__(self, *args, **kwargs):
+        super(AcousticSet, self).__init__()
+
+        """
+        Assuming you are in /interpeech_ser
+        """
+
+        self.filename_list = kwargs.get("filename_list", None)
+        self.filepath_list = [f"data/Audios/{filename}" for filename in self.filename_list]
+        self.features_file = kwargs.get("features_file", None)
+        self.smile_functionals = opensmile.Smile(
+                            feature_set=opensmile.FeatureSet.ComParE_2016,
+                            feature_level=opensmile.FeatureLevel.Functionals)
+        
+    def __len__(self):
+        return len(self.filename_list)
+    
+    def extract_features(self, filepath):
+        signal, sr = audiofile.read(filepath)
+        df = self.smile_functionals.process_signal(signal, sr)
+        tensor = torch.tensor(df.values)
+        return tensor
+
+    def read_features(self):
+        if self.features_file is None:
+            print("First time extracting features. This may take a while.")
+            features_tensor = torch.empty(0, len(self.smile_functionals.feature_names))
+
+            for filepath in tqdm(self.filepath_list):
+                tensor = self.extract_features(filepath)
+                features_tensor = torch.cat([features_tensor, tensor], dim = 0)
+            features_tensor = normalizer.normalize_feature_tensor(features_tensor)
+            torch.save(features_tensor, 'data/acoustic_features.pt')
+            self.features_file = 'data/acoustic_features.pt'
+            return features_tensor
+        
+        else:
+            features_tensor = self.features_file
+            return features_tensor
+    
+    def __getitem__(self, idx):
+        features_tensor = self.read_features()
+        tensor = features_tensor[idx]
+        
+        return tensor
 
 class WavSet(torch_utils.data.Dataset): 
     def __init__(self, *args, **kwargs):

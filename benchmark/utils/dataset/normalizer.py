@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 def get_norm_stat_for_wav(wav_list, verbose=False):
     count = 0
     wav_sum = 0
@@ -14,3 +15,9 @@ def get_norm_stat_for_wav(wav_list, verbose=False):
     wav_std = np.sqrt(wav_var)
 
     return wav_mean, wav_std
+
+def normalize_feature_tensor(feature_tensor):
+    means = torch.mean(feature_tensor, dim = 0)
+    stds = torch.std(feature_tensor, dim = 0)
+    normalized_tensor = (feature_tensor - means) / stds
+    return normalized_tensor
