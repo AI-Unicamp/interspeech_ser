@@ -407,7 +407,7 @@ for epoch in range(EPOCHS):
 
         optimizer.zero_grad()
         outputs, speech_pooled, text_pooled = ser_model(inputs1, inputs2)
-
+        # print(speech_pooled.shape, text_pooled.shape)
         loss_cka = cka_loss(speech_pooled, text_pooled)
 
         logits = outputs
@@ -476,6 +476,9 @@ for epoch in range(EPOCHS):
     total_y = torch.cat(total_y, 0)
     loss = utils.CE_weight_category(total_pred, total_y, class_weights_tensor_val)
     f1 = f1_score(val_labels, val_preds, average='macro')
+    
+    total_wav = torch.cat(total_wav, 0)
+    total_rob = torch.cat(total_rob, 0)
     loss_cka_eval = cka_loss(total_wav, total_rob)
     dev_loss = loss
     # Logging

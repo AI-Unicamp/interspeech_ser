@@ -53,8 +53,8 @@ with open(config_path, "r") as f:
 audio_path = config["wav_dir"]
 label_path = config["label_path"]
 
-SSL_TYPE = utils.get_ssl_type(config['ssl_type'])
-assert SSL_TYPE != None, print("Invalid SSL type!")
+SSL_TYPE = config['ssl_type']
+# assert SSL_TYPE != None, print("Invalid SSL type!")
 BATCH_SIZE = config['batch_size']
 ACCUMULATION_STEP = config['accum_step']
 assert (ACCUMULATION_STEP > 0) and (BATCH_SIZE % ACCUMULATION_STEP == 0)

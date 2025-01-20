@@ -1,0 +1,20 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "use_focalloss":false,
+    "use_timbre_perturb": true,
+    "epochs": 5,
+    "lr": 1e-5,
+    "model_path": "./experiments/wavlmlarge_pretrained_5epochs",
+    "batch_size": 16,
+    "accum_step":1,
+    "head_dim": 512,
+    "pooling_type":"AttentiveStatisticsPooling",
+    "weight_decay":1e-3,
+    "tp_prob":0.5,
+    "dropout_head": 0.5,
+    "normalize_wav": false,
+    "ssl_type": "microsoft/wavlm-large"
+}

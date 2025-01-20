@@ -476,6 +476,9 @@ for epoch in range(EPOCHS):
     total_y = torch.cat(total_y, 0)
     loss = utils.CE_weight_category(total_pred, total_y, class_weights_tensor_val)
     f1 = f1_score(val_labels, val_preds, average='macro')
+    
+    total_wav = torch.cat(total_wav, 0)
+    total_rob = torch.cat(total_rob, 0)
     loss_cka_eval = 1-cka_loss(total_wav, total_rob)
     dev_loss = loss
     # Logging

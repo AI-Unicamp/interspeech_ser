@@ -295,7 +295,7 @@ ser_model = MultiModalEmotionClassifier(
         dropout=0.5
     )
 ser_model.to(device)
-ser_model.load_state_dict(torch.load(MODEL_PATH+"/multimodal_ser.pt"))
+ser_model.load_state_dict(torch.load(MODEL_PATH+"/multimodal_ser.pt"), strict=False)
 ser_model.eval()
 
 

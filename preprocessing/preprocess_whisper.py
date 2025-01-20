@@ -14,18 +14,24 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", type=int, default=7)
 parser.add_argument("--ssl_type", type=str, default="wavlm-large")
-parser.add_argument("--df_path", type=str, default="./")
 parser.add_argument("--save_path", type=str, default="./")
 parser.add_argument("--wav_dir", type=str, default="./")
 parser.add_argument("--num_workers", type=int, default=4)  # Number of parallel workers
+parser.add_argument("--n_layer", type=int, default=-1)
+parser.add_argument("--use_average", type=str, default='n')  
+
 args = parser.parse_args()
 
 # Set global variables
 SSL_TYPE = args.ssl_type
-DF_PATH = args.df_path
 AUDIOS_PATH = args.wav_dir
 SAVE_PATH = args.save_path
 NUM_WORKERS = args.num_workers
+LAYER = args.n_layer
+
+AVERAGE = True if args.use_average == 'y' else False
+
+print(f"Using average = {AVERAGE}")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'Using device = {device}')
@@ -46,8 +52,25 @@ def extract_and_save(wav_path, model, processor, save_path):
         # inputs = {k: v.to(device) for k, v in inputs.items()}
         input_features = inputs["input_features"].to(device)
 
-        with torch.no_grad():
-            feats = model.encoder(input_features).last_hidden_state.squeeze(0)
+        if(AVERAGE):
+            with torch.no_grad():
+                outputs = model.encoder(input_features, output_hidden_states=True)
+
+            
+            # Get all hidden states
+            hidden_states = outputs.hidden_states
+
+            # Get last 4 hidden states and stack them
+            last_four_states = torch.stack(hidden_states[-4:])
+            
+            # Calculate mean across the last 4 layers
+            # Shape: [sequence_length, hidden_size]
+            feats = torch.mean(last_four_states, dim=0).squeeze(0)
+        else:
+            with torch.no_grad():
+                feats = model.encoder(input_features, output_hidden_states=True)
+            
+            feats = feats['hidden_states'][LAYER].squeeze(0)
 
         actual_frames = min(n_frames, feats.shape[1])
         feats = feats[:actual_frames, :]
@@ -69,13 +92,10 @@ def process_file(wav_file):
 # Main workflow
 everything_ok = True
 
-# Load dataframe
-print(f"Reading dataframe {DF_PATH}")
-try:
-    df = pd.read_csv(DF_PATH)
-except Exception as e:
-    print(f"Error reading dataframe from {DF_PATH}: {e}")
-    everything_ok = False
+wav_paths = os.listdir(AUDIOS_PATH)
+len_files = len(wav_paths)
+print(f"{len_files} file are going to be processed...")
+df = pd.DataFrame({'FileName': wav_paths})
 
 # Check audio files
 if everything_ok:

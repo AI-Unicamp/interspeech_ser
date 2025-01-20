@@ -154,7 +154,6 @@ class WavSet(torch_utils.data.Dataset):
         self.normalize_wav = kwargs.get("normalize_wav", True)
         self.use_tp = kwargs.get("use_tp", False)
         self.tp_prob = kwargs.get("tp_prob", 1)
-
         # check max duration
         self.max_dur = np.min([np.max([len(cur_wav) for cur_wav in self.wav_list]), self.upper_bound_max_dur*self.sampling_rate])
 
@@ -179,7 +178,7 @@ class WavSet(torch_utils.data.Dataset):
 
         if(self.normalize_wav):
             cur_wav = (cur_wav - self.wav_mean) / (self.wav_std+0.000001)
-        
+
         result = (cur_wav, cur_dur)
         return result
 

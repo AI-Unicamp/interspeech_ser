@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-
 def collate_fn_txt_wav_lab_mask(batch):
     total_wav = []
     total_lab = []
@@ -59,6 +58,7 @@ def collate_fn_wav_lab_mask(batch):
         attention_mask[data_idx,:dur] = 1
     ## compute mask
     return total_wav, total_lab, attention_mask, total_utt
+
 
 
 def collate_fn_wav_test3(batch):

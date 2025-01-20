@@ -217,7 +217,7 @@ class EncoderDataset(Dataset):
 
         # Create the mel spectrogram transform
         self.mel_spectrogram_transform = T.MelSpectrogram(
-            sample_rate=1600,
+            sample_rate=16000,
             n_fft=400 * 2,
             win_length=400,
             hop_length=160,
@@ -344,24 +344,6 @@ class EncoderDataset(Dataset):
             feat_name = os.path.join(self.audio_path, utter_path)
             feat = self.load_and_extract_melspectrogram(feat_name)
 
-            # load wav file
-            # wav = self.load_wav(utter_path)
-            # offset = random.randint(0, wav.shape[0] - self.seq_len)
-            # wav = wav[offset : offset + self.seq_len]
-
-
-            # if(self.use_timbre_perturb):
-            #     # wav = finegrained_timbre_perturb(np.asarray(wav, dtype=np.float32), 5, self.sample_rate , self.sample_rate//2, 1.4, 0.01, 75,600)
-            #     wav = fixed_timbre_perturb(wav, sr = self.sample_rate, segment_size= self.sample_rate//2, formant_rate=1.4, pitch_steps = 0.01, pitch_floor=75, pitch_ceil=600, fname='null')
-            # # if self.augmentator is not None and self.data_augmentation_p:
-            # #     if random.random() < self.data_augmentation_p:
-            # #         wav = self.augmentator.apply_one(wav)
-
-            # if not self.use_torch_spec:
-            #     mel = self.ap.melspectrogram(wav)
-            #     feats.append(torch.FloatTensor(mel))
-            # else:
-            #     feats.append(torch.FloatTensor(wav))
             feats.append(feat.float())
             labels.append(class_id)
 

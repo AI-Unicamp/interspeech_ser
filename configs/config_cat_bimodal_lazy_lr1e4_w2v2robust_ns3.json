@@ -1,0 +1,16 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "txt_dir": "/workspace/lucas.ueda/interspeech_ser/test/whisper_transcripts.csv",
+    "lazy_dir1": "/workspace/lucas.ueda/interspeech_ser/data_tmp/wav2vec2_large_robust",
+    "lazy_dir2": "/workspace/lucas.ueda/interspeech_ser/data_tmp/ns3_prosody_speaker_emb",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "feat1_dim": 1024,
+    "feat2_dim": 512,
+    "use_balanced_batch": false,
+    "use_focalloss":false,
+    "epochs": 30,
+    "lr": 1e-5,
+    "model_path": "./experiments/multimodalmodel_w2v2robust_ns3_lazyload_lr1e4",
+    "batch_size": 64,
+    "accum_step":1
+}

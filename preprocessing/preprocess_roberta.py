@@ -17,6 +17,8 @@ parser.add_argument("--df_path", type=str, default="./")
 parser.add_argument("--save_path", type=str, default="./")
 parser.add_argument("--num_workers", type=int, default=4)  # Number of parallel workers
 parser.add_argument("--max_len", type=int, default=80)  
+parser.add_argument("--use_average", type=str, default='n')  
+
 
 args = parser.parse_args()
 
@@ -26,6 +28,10 @@ DF_PATH = args.df_path
 SAVE_PATH = args.save_path
 NUM_WORKERS = args.num_workers
 MAX_LEN = args.max_len
+
+AVERAGE = True if args.use_average == 'y' else False
+
+print(f"Using average = {AVERAGE}")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'Using device = {device}')
@@ -47,8 +53,22 @@ def extract_and_save(text, wav_name, model, save_path):
             return_tensors="pt"
         ).to(device)
 
-        with torch.no_grad():
-            feats = model(**encoding).last_hidden_state.squeeze(0)
+        if(AVERAGE):
+            with torch.no_grad():
+                outputs = model(**encoding, output_hidden_states=True)
+            # Get all hidden states
+            hidden_states = outputs.hidden_states
+            
+            # Get last 4 hidden states and stack them
+            last_four_states = torch.stack(hidden_states[-4:])
+            
+            # Calculate mean across the last 4 layers
+            # Shape: [sequence_length, hidden_size]
+            feats = torch.mean(last_four_states, dim=0).squeeze(0)
+        else:
+            with torch.no_grad():
+                feats = model(**encoding).last_hidden_state.squeeze(0)
+
         pt_name = os.path.splitext(os.path.basename(wav_name))[0] ## PRECISO ASSOCIAR COM O WAVPATH MESMO
         file_path = os.path.join(save_path, f"{pt_name}.pt")
         torch.save(feats, file_path)

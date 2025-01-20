@@ -75,15 +75,19 @@ def CCC_loss(pred, lab, m_lab=None, v_lab=None, is_numpy=False):
     return ccc
 
 def MSE_emotion(pred, lab):
-    aro_loss = F.mse_loss(pred[:][0], lab[:][0])
-    dom_loss = F.mse_loss(pred[:][1], lab[:][1])
-    val_loss = F.mse_loss(pred[:][2], lab[:][2])
+    aro_loss = F.mse_loss(pred[:,0], lab[:,0])
+    dom_loss = F.mse_loss(pred[:,1], lab[:,1])
+    val_loss = F.mse_loss(pred[:,2], lab[:,2])
 
-    return [aro_loss, dom_loss, val_loss]
+    return aro_loss + dom_loss + val_loss
 
 
 def CE_weight_category(pred, lab, weights):
     criterion = torch.nn.CrossEntropyLoss(weight=weights)
+    return criterion(pred, lab)
+
+def CE_weight_category_smoothing(pred, lab, weights):
+    criterion = torch.nn.CrossEntropyLoss(weight=weights,  label_smoothing=0.1)
     return criterion(pred, lab)
 
 
