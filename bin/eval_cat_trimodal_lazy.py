@@ -242,7 +242,7 @@ class MultiModalEmotionClassifier(nn.Module):
         # Cross-modal attention
         self.speech_attention = nn.MultiheadAttention(fusion_hidden_dim * 2, 1, dropout=dropout, batch_first=True)
         self.text_attention = nn.MultiheadAttention(fusion_hidden_dim * 2, 1, dropout=dropout, batch_first=True)
-        self.prosody_attention = nn.MultiheadAttention(fusion_hidden_dim * 2, 1, dropout=dropout, batch_first=True)
+        self.prosody_attention = nn.MultiheadAttention(fusion_hidden_dim * 2, 2, dropout=dropout, batch_first=True)
         
         # Simple attention pooling
         self.speech_attn = nn.Linear(fusion_hidden_dim * 2, 1)
@@ -255,6 +255,12 @@ class MultiModalEmotionClassifier(nn.Module):
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(fusion_hidden_dim, num_emotions)
+        )
+        self.classifier_neutral = nn.Sequential(
+            nn.Linear(fusion_hidden_dim * 6, fusion_hidden_dim),  # Increased to 6x for three modalities
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(fusion_hidden_dim, 1)
         )
         
         self.layer_norm = nn.LayerNorm(fusion_hidden_dim * 6)  # Adjusted for three modalities
@@ -315,8 +321,8 @@ class MultiModalEmotionClassifier(nn.Module):
         # Layer norm and classify
         normalized = self.layer_norm(concatenated)
         logits = self.classifier(normalized)
-        
-        return logits
+        logits_neutral = self.classifier_neutral(normalized)
+        return logits, logits_neutral
         
 # val_dataset = MultiLabelAudioDataset(val_df['FileName'].tolist(), val_df[classes].values, lazy_path1, lazy_path2)
 val_dataset = MultiLabelAudioDataset(val_df['FileName'].tolist(), val_df[classes].values, lazy_path1, lazy_path2, lazy_path3)
@@ -357,7 +363,7 @@ for batch in tqdm(val_loader):
 
     with torch.no_grad():
 
-        outputs = ser_model(inputs1,inputs2,inputs3)
+        outputs, _ = ser_model(inputs1,inputs2,inputs3)
         logits = outputs
 
         total_pred.append(logits)

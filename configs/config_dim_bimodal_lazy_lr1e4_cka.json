@@ -8,7 +8,7 @@
     "feat2_dim": 1024,
     "use_balanced_batch": false,
     "use_focalloss":false,
-    "epochs": 20,
+    "epochs": 0,
     "lr": 1e-4,
     "model_path": "./experiments/dim_multimodalmodel_wavlmlarge_robertalarge_lazyload_lr1e4_cka",
     "batch_size": 64,

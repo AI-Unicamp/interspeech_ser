@@ -395,7 +395,7 @@ min_loss=1e10
 max_f1 = 0
 
 logger.info("Starting training...")
-focal_loss = loss.FocalLoss(alpha=1, gamma=2, reduction='mean', dynamic_alpha=True)
+focal_loss = loss.FocalLoss(alpha=1, gamma=2, reduction='mean', dynamic_alpha=False)
 
 for epoch in range(EPOCHS):
     print("Epoch: ", epoch)

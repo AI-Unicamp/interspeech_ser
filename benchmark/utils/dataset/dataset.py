@@ -154,6 +154,8 @@ class WavSet(torch_utils.data.Dataset):
         self.normalize_wav = kwargs.get("normalize_wav", True)
         self.use_tp = kwargs.get("use_tp", False)
         self.tp_prob = kwargs.get("tp_prob", 1)
+        self.type_processor = kwargs.get("type_processor", "whisper")
+        self.processor = kwargs.get("processor", None)
         # check max duration
         self.max_dur = np.min([np.max([len(cur_wav) for cur_wav in self.wav_list]), self.upper_bound_max_dur*self.sampling_rate])
 
@@ -178,6 +180,27 @@ class WavSet(torch_utils.data.Dataset):
 
         if(self.normalize_wav):
             cur_wav = (cur_wav - self.wav_mean) / (self.wav_std+0.000001)
+
+        # print(cur_wav.shape)
+        if(self.processor is not None):
+            if(self.type_processor == "whisper"):
+                cur_wav = self.processor(
+                cur_wav, 
+                sampling_rate=16000, 
+                return_tensors='pt'
+                )
+                # print(cur_wav)
+                cur_wav = cur_wav["input_features"].squeeze(0)
+            else:
+                cur_wav = self.processor(
+                cur_wav, 
+                sampling_rate=16000, 
+                return_tensors='pt',
+                padding=True
+                )["input_values"].squeeze(0)
+                # print(cur_wav.shape)
+
+        # print(cur_wav.shape)
 
         result = (cur_wav, cur_dur)
         return result

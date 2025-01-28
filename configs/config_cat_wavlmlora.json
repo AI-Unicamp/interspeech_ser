@@ -1,0 +1,12 @@
+{
+    "wav_dir": "/workspace/lucas.ueda/interspeech_ser/data/Audios",
+    "label_path": "/workspace/lucas.ueda/interspeech_ser/benchmark/processed_labels.csv",
+    "use_balanced_batch": false,
+    "use_focalloss":false,
+    "epochs": 2,
+    "lr": 1e-5,
+    "model_path": "./experiments/LORA_WAVLMLARGE",
+    "batch_size": 8,
+    "accum_step":1,
+    "weight_decay": 1e-5
+}
