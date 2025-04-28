@@ -143,7 +143,61 @@ print(class_weights_tensor)
 
 logger.info(f"Class weights: {class_weights_tensor}")
 
-feature_extractor = AutoFeatureExtractor.from_pretrained('microsoft/wavlm-large')
+
+class WavLMClassifier(nn.Module):
+    def __init__(self, base_model, num_emotions):
+        super().__init__()
+        self.base_model = base_model
+
+        # Get hidden size from the base model
+        hidden_size = base_model.config.hidden_size
+
+        # Classification head
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_size//2, num_emotions)
+        )
+
+    def forward(self, input_values, attention_mask=None):
+        # Get the hidden states from the wav2vec2 model
+        outputs = self.base_model(input_values, attention_mask=attention_mask)
+
+        # Use the mean of the last hidden states as features
+        hidden_states = outputs.last_hidden_state
+        pooled_output = torch.mean(hidden_states, dim=1)
+
+        # Classify the pooled output
+        logits = self.classifier(pooled_output)
+        return logits
+
+# Choose your preferred wav2vec2 model
+model_id = "/workspace/lucas.ueda/interspeech_ser/test/local_wavlm_model"
+model = AutoModel.from_pretrained(model_id)
+feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
+
+from peft import LoraConfig, get_peft_model
+
+# Define the LoRA configuration
+peft_config = LoraConfig(
+    inference_mode=False,
+    r=8,  # rank of the low-rank matrices
+    lora_alpha=32,  # scaling factor
+    lora_dropout=0.1,  # dropout rate
+    # Target specific modules in the model for LoRA adaptation
+    target_modules=["k_proj", "q_proj", "v_proj"],
+)
+
+# Apply LoRA to the model
+model = get_peft_model(model, peft_config)
+
+# See how many parameters are trainable vs. the total
+print("Lora trainable parameters:")
+print(model.print_trainable_parameters())
+
+ser_model = WavLMClassifier(model ,8)
+
 
 total_dataset=dict()
 total_dataloader=dict()
@@ -202,65 +256,6 @@ for dtype in ["train", "dev"]:
 
 
 
-
-
-class WavLMClassifier(nn.Module):
-    def __init__(self, wavlm_model_name='microsoft/wavlm-large', num_emotions=8):
-        super().__init__()
-        # Load Whisper model and feature extractor
-        # self.whisper = WhisperModel.from_pretrained(whisper_model_name)
-        # self.feature_extractor = WhisperFeatureExtractor.from_pretrained(whisper_model_name)
-        self.wavlm = AutoModel.from_pretrained(wavlm_model_name)
-        # Freeze original Whisper parameters
-        # for param in self.whisper.parameters():
-        #     param.requires_grad = False
-        
-        # LoRA configuration
-        lora_config = LoraConfig(
-            r=8,
-            lora_alpha=16,
-            target_modules=['q_proj', 'v_proj'],
-            lora_dropout=0.2,
-            bias='none',
-            task_type='FEATURE_EXTRACTION'
-        )
-        
-        # Apply LoRA
-        self.wavlm = get_peft_model(self.wavlm, lora_config)
-        
-        # Classification head
-        self.classifier = nn.Sequential(
-            nn.Linear(self.wavlm.config.hidden_size, 512),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(512, num_emotions)
-        )
-    
-    def forward(self, audio, attention_mask):
-        # Convert torch tensor to numpy if needed
-        # if torch.is_tensor(audio):
-            # audio = audio.numpy()
-
-        # print(audio.shape)
-
-        INPUTS = {'input_values':audio, 
-            'attention_mask':attention_mask,
-            'output_hidden_states':True}
-        # print(self.wavlm.forward.__code__.co_varnames)
-        # Extract features from Whisper
-        wavlm_outputs = self.wavlm.model.forward(**INPUTS)
-        
-        # feats = whisper_outputs['hidden_states'][-1
-        # print(whisper_outputs["hidden_states"].shape)
-        # print(feats.shape)
-        # Pool features
-        pooled_features = wavlm_outputs.last_hidden_state.mean(dim=1)
-        
-        # Classify emotions
-        return self.classifier(pooled_features)
-
-
-ser_model = WavLMClassifier()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ser_model.to(device)
 ser_model.eval()
@@ -309,8 +304,8 @@ for epoch in range(EPOCHS):
         if((batch_cnt+1)%1000 == 0):
             logger.info(f"Epoch ({epoch+1}/{EPOCHS})| step = {batch_cnt}: loss = {loss}")
 
-            torch.save(ser_model.state_dict(), os.path.join(MODEL_PATH,  "whisper_lora_ser_step{batch_cnt}.pt"))
-
+            torch.save(ser_model.state_dict(), os.path.join(MODEL_PATH,  f"wavlm_lora_ser_step{batch_cnt}.pt"))
+            ser_model.base_model.save_pretrained(os.path.join(MODEL_PATH, f"base_model_wavlm_lora_step{batch_cnt}"))
     ser_model.eval() 
     total_pred = [] 
     total_y = []
@@ -347,6 +342,6 @@ for epoch in range(EPOCHS):
         print("Loss",min_loss)
 
         torch.save(ser_model.state_dict(), \
-            os.path.join(MODEL_PATH,  "whisper_lora_ser.pt"))
-
+            os.path.join(MODEL_PATH,  "best_model_wavlm_lora_ser.pt"))
+        ser_model.base_model.save_pretrained(os.path.join(MODEL_PATH, "best_model_wavlm_lora"))
 
