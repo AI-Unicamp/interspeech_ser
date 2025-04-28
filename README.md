@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15293194.svg)](https://doi.org/10.5281/zenodo.15293194)
+
 # Interspeech 2025 - Speech Emotion Recognition challenge
 
 UNICAMP entry for the 2025 Interspeech challenge on speech emotion recognition.
