@@ -5,3 +5,5 @@ benchmark/model/
 experiments/
 pretrained_models/
 data_tmp/
+test/legacy/
+submissions/
