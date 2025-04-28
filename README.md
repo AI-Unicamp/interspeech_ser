@@ -69,7 +69,7 @@ For speech SSL models, run:
 python preprocessing/preprocess_speech.py --ssl_type $SSL_TYPE --wav_dir $WAVS_DIR --save_path data_tmp/$SSL_NAME
 ```
 
-$$\text{SSL\_TYPE} \in \{\text{microsoft/wavlm-large}, \text{facebook/wav2vec2-xls-r-2b}, \text{facebook/hubert-xlarge-ls960-ft}\}$$
+SSL_TYPE ∈ {`microsoft/wavlm-large`, `facebook/wav2vec2-xls-r-2b`, `facebook/hubert-xlarge-ls960-ft`}
 
 For whisper model, run:
 ```bash
